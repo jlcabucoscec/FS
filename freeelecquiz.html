@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cyber Secure Quiz</title>
+<style>
+    body {
+        background: #0a0f1f;
+        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+    }
+    .box {
+        background: rgba(20,25,50,0.9);
+        border: 2px solid #00f0ff;
+        border-radius: 12px;
+        padding: 20px;
+        width: 80%;
+        max-width: 600px;
+        margin: auto;
+        box-shadow: 0 0 20px #00f0ff;
+    }
+    input, button {
+        padding: 10px;
+        margin: 8px;
+        border-radius: 5px;
+        border: none;
+        width: 80%;
+    }
+    button {
+        background: #00f0ff;
+        cursor: pointer;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body oncontextmenu="return false;" onkeydown="return disableKeys(event)">
+
+<h1>Free Elective Midterm Quiz 1</h1>
+
+<div id="loginBox" class="box">
+    <h2>Enter Your Details</h2>
+    <input type="text" id="name" placeholder="Full Name" required><br>
+    <input type="text" id="schedule" placeholder="Schedule" required><br>
+    <input type="date" id="date" required><br>
+    <button onclick="startQuiz()">Start Quiz</button>
+</div>
+
+<div id="quizBox" class="box" style="display:none;">
+    <div id="quiz"></div>
+    <button id="nextBtn" onclick="nextQuestion()">Next</button>
+</div>
+
+<div id="result" class="box" style="display:none;"></div>
+<div id="answers" class="box" style="display:none;"></div>
+
+<script>
+// Google Apps Script URL
+const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec"; // Replace with your Google Apps Script Web App URL
+
+// Obfuscated questions & answers
+const encodedData = atob("W3sicSI6IldoYXQgaXMgU29mdHdhcmUgQXJjaGl0ZWN0dXJlPyIsIm8iOlsiSGlnaC1sZXZlbCBzdHJ1Y3R1cmUiLCJMb3ctbGV2ZWwgcHJvZ3JhbSIsIk9ubHkgdWkiXSwiYSI6IkhpZ2gtbGV2ZWwgc3RydWN0dXJlIn1d"); 
+const questions = JSON.parse(encodedData);
+
+let shuffledQuestions, currentQuestionIndex=0, score=0, userAnswers=[];
+let studentData = {};
+
+function disableKeys(e) {
+    if (e.ctrlKey && (e.key === "u" || e.key === "U" || e.key === "s" || e.key === "S" || e.key === "c" || e.key === "C")) {
+        return false;
+    }
+}
+
+function startQuiz(){
+    const name = document.getElementById("name").value.trim();
+    const schedule = document.getElementById("schedule").value.trim();
+    const date = document.getElementById("date").value;
+
+    if(!name || !schedule || !date){
+        alert("Please fill out all fields.");
+        return;
+    }
+    studentData = {name, schedule, date};
+
+    shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("quizBox").style.display = "block";
+    loadQuestion();
+}
+
+function loadQuestion(){
+    const q = shuffledQuestions[currentQuestionIndex];
+    let html = `<h3>${q.q}</h3>`;
+    q.o.sort(() => Math.random() - 0.5).forEach(opt => {
+        html += `<label><input type="radio" name="answer" value="${opt}"> ${opt}</label><br>`;
+    });
+    document.getElementById("quiz").innerHTML = html;
+}
+
+function nextQuestion(){
+    const selected = document.querySelector('input[name="answer"]:checked');
+    if(!selected){
+        alert("Select an answer");
+        return;
+    }
+    userAnswers.push(selected.value);
+    if(selected.value === shuffledQuestions[currentQuestionIndex].a) score++;
+
+    currentQuestionIndex++;
+    if(currentQuestionIndex < shuffledQuestions.length){
+        loadQuestion();
+    } else {
+        finishQuiz();
+    }
+}
+
+function finishQuiz(){
+    document.getElementById("quizBox").style.display = "none";
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").innerHTML = `<h2>Your Score: ${score} / ${shuffledQuestions.length}</h2><p>Answers will be available in 10 minutes.</p>`;
+
+    // Send to Google Sheet
+    fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify({...studentData, score, answers:userAnswers})
+    });
+
+    // Show answers after 10 minutes
+    setTimeout(() => {
+        let ansHTML = "<h3>Correct Answers:</h3><ol>";
+        shuffledQuestions.forEach((q,i) => {
+            ansHTML += `<li>${q.q}<br><strong>Correct:</strong> ${q.a}<br><strong>Your Answer:</strong> ${userAnswers[i]}</li>`;
+        });
+        ansHTML += "</ol>";
+        document.getElementById("answers").innerHTML = ansHTML;
+        document.getElementById("answers").style.display = "block";
+    }, 10*60*1000);
+}
+</script>
+
+</body>
+</html>
