@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Quiz</title>
+<style>
+  body {
+    background-color: #1e1e2f;
+    color: #f5f5f5;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .container {
+    background: #2a2a3d;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    text-align: center;
+    width: 90%;
+    max-width: 600px;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  h1 {
+    margin-bottom: 15px;
+  }
+  h2, h3 {
+    margin: 8px 0;
+  }
+  input {
+    padding: 10px;
+    width: 80%;
+    margin: 5px 0;
+    border-radius: 6px;
+    border: none;
+    font-size: 16px;
+  }
+  button {
+    background-color: #4c6ef5;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    margin: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+  }
+  button:hover {
+    background-color: #3b5bdb;
+  }
+  #timer {
+    font-size: 20px;
+    margin: 15px 0;
+    color: #ff8787;
+    font-weight: bold;
+  }
+  .question {
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+</style>
+</head>
+<body>
+  <div class="container" id="startContainer">
+    <h1>Live Quiz</h1>
+    <input id="name" placeholder="Your Name"><br>
+    <input id="schedule" placeholder="Schedule"><br>
+    <button id="startBtn">Start Quiz (wait 5 seconds)</button>
+  </div>
+
+  <div class="container" id="quizContainer" style="display:none">
+    <h1>Live Quiz</h1>
+    <h2 id="displayName"></h2>
+    <h3 id="displaySchedule"></h3>
+    <div id="timer">Time Left: 10:00</div>
+    <div id="questionBox"></div>
+  </div>
+
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/1GzWimNcy3EP08pOoPGNk7rSDx48layBIjyR7-lTAXa8/gviz/tq?tqx=out:json&sheet=freeelecanswer1";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec";
+
+let questions = [], current = 0, score = 0, timerInterval;
+
+document.getElementById("startBtn").onclick = () => {
+  const name = document.getElementById("name").value.trim();
+  const schedule = document.getElementById("schedule").value.trim();
+  if (!name || !schedule) return alert("Please fill both fields.");
+  document.getElementById("startBtn").disabled = true;
+  document.getElementById("startBtn").textContent = "Please wait…";
+  setTimeout(() => initQuiz(name, schedule), 5000);
+};
+
+function initQuiz(name, schedule) {
+  fetch(sheetURL)
+    .then(r => r.text())
+    .then(t => JSON.parse(t.substr(47).slice(0, -2)))
+    .then(js => {
+      questions = js.table.rows.slice(1).map(r => ({
+        q: r.c[0]?.v,
+        options: [r.c[1]?.v, r.c[2]?.v, r.c[3]?.v, r.c[4]?.v].filter(Boolean),
+        a: r.c[5]?.v
+      }));
+      questions.sort(() => Math.random() - 0.5);
+
+      document.getElementById("displayName").textContent = name;
+      document.getElementById("displaySchedule").textContent = schedule;
+      
+      document.getElementById("startContainer").style.display = 'none';
+      document.getElementById("quizContainer").style.display = 'block';
+      startTimer(10, name, schedule);
+      renderQuestion(name, schedule);
+    });
+}
+
+function renderQuestion(name, schedule) {
+  if (current >= questions.length) return finishQuiz(name, schedule);
+  const {q, options, a} = questions[current];
+  document.getElementById("questionBox").innerHTML = `
+    <div class="question">${q}</div>
+    ${options.map(opt => `<button onclick="choose('${opt}', '${a}', '${name}', '${schedule}')">${opt}</button>`).join('')}
+  `;
+}
+
+window.choose = (selected, correct, name, schedule) => {
+  if (selected === correct) score++;
+  current++;
+  setTimeout(() => renderQuestion(name, schedule), 300);
+};
+
+function finishQuiz(name, schedule) {
+  clearInterval(timerInterval);
+  document.getElementById("questionBox").innerHTML = `<h3>Your score: ${score}/${questions.length}</h3>`;
+  fetch(scriptURL, {
+    method: 'POST',
+    body: JSON.stringify({ name, schedule, score, date: new Date().toISOString().slice(0,10) }),
+    headers: { 'Content-Type': 'application/json' }
+  }).catch(console.error);
+}
+
+function startTimer(minutes, name, schedule) {
+  let time = minutes * 60;
+  timerInterval = setInterval(() => {
+    let min = Math.floor(time / 60);
+    let sec = time % 60;
+    document.getElementById("timer").textContent = `Time Left: ${min}:${sec < 10 ? '0'+sec : sec}`;
+    time--;
+    if (time < 0) {
+      finishQuiz(name, schedule);
+    }
+  }, 1000);
+}
+
+// Disable right-click
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+// Disable some common inspect shortcuts
+document.addEventListener('keydown', function(event) {
+    if (
+        event.key === "F12" || 
+        (event.ctrlKey && event.shiftKey && event.key === 'I') || 
+        (event.ctrlKey && event.shiftKey && event.key === 'J') || 
+        (event.ctrlKey && event.key === 'U')
+    ) {
+        event.preventDefault();
+    }
+});
+
+</script>
+</body>
+</html>
