@@ -1,209 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Cyber Secure Quiz</title>
-<style>
-    body {
-        background: #0a0f1f;
-        color: #e0e0e0;
-        font-family: Arial, sans-serif;
-        text-align: center;
-        padding: 20px;
-    }
-    h1 {
-        color: #00f0ff;
-        text-shadow: 0 0 8px #00f0ff;
-    }
-    .box {
-        background: rgba(20,25,50,0.9);
-        border: 2px solid #00f0ff;
-        border-radius: 12px;
-        padding: 20px;
-        width: 90%;
-        max-width: 700px;
-        margin: auto;
-        box-shadow: 0 0 20px #00f0ff;
-    }
-    input, button {
-        padding: 10px;
-        margin: 8px;
-        border-radius: 5px;
-        border: none;
-        width: 80%;
-        font-size: 1em;
-    }
-    button {
-        background: #00f0ff;
-        cursor: pointer;
-        font-weight: bold;
-        color: #000;
-        transition: background 0.3s, box-shadow 0.3s;
-    }
-    button:hover {
-        background: #00d0e6;
-        box-shadow: 0 0 10px #00f0ff;
-    }
-    .question-text {
-        font-size: 1.2em;
-        margin-bottom: 15px;
-        text-align: left;
-    }
-    .option {
-    background: rgba(0, 240, 255, 0.05);
-    border: 2px solid #00f0ff;
-    border-radius: 10px;
-    padding: 15px;
-    margin: 15px 0; /* More space between choices */
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
-    display: block;
-    box-shadow: 0 0 5px rgba(0, 240, 255, 0.3); /* Subtle glow */
-}
-.option:hover {
-    background: rgba(0, 240, 255, 0.15);
-    box-shadow: 0 0 12px #00f0ff;
-    transform: translateY(-2px); /* Lift on hover */
-}
-.option.selected {
-    background: rgba(0, 240, 255, 0.25);
-    box-shadow: 0 0 15px #00f0ff;
-}
+<head><meta charset="UTF-8"><title>Live Quiz</title></head>
+<body>
+  <div>
+    <h2>Enter your details:</h2>
+    <input id="name" placeholder="Your Name"><br>
+    <input id="schedule" placeholder="Schedule"><br>
+    <button id="startBtn">Start Quiz (wait 5 seconds)</button>
+  </div>
+  <div id="quizContainer" style="display:none"></div>
+  <script>
+  const sheetURL = "https://docs.google.com/spreadsheets/d/1GzWimNcy3EP08pOoPGNk7rSDx48layBIjyR7-lTAXa8/gviz/tq?tqx=out:json&sheet=freeelecanswer1";
+  const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec";
+  let questions = [], current = 0, score = 0;
+  const startBtn = document.getElementById("startBtn"), container = document.getElementById("quizContainer");
 
-    .option input {
-        display: none;
-    }
-</style>
-</head>
-<body oncontextmenu="return false;" onkeydown="return disableKeys(event)">
+  startBtn.onclick = () => {
+    const name = document.getElementById("name").value, schedule = document.getElementById("schedule").value;
+    if (!name || !schedule) return alert("Please fill both fields.");
+    startBtn.disabled = true;
+    startBtn.textContent = "Please wait…";
+    setTimeout(() => initQuiz(name, schedule), 5000);
+  };
 
-<h1>Free Elective Midterm Quiz 1</h1>
+  function initQuiz(name, schedule) {
+    fetch(sheetURL)
+      .then(r => r.text())
+      .then(t => JSON.parse(t.substr(47).slice(0, -2)))
+      .then(js => {
+        questions = js.table.rows.slice(1).map(r => ({
+          q: r.c[0]?.v,
+          options: [r.c[1]?.v, r.c[2]?.v, r.c[3]?.v, r.c[4]?.v].filter(Boolean),
+          a: r.c[5]?.v
+        }));
+        questions.sort(() => Math.random() - 0.5);
+        container.style.display = 'block';
+        renderQuestion(name, schedule);
+      });
+  }
 
-<div id="loginBox" class="box">
-    <h2>Enter Your Details</h2>
-    <input type="text" id="name" placeholder="Full Name" required><br>
-    <input type="text" id="schedule" placeholder="Schedule" required><br>
-    <input type="date" id="date" required><br>
-    <button onclick="startQuiz()">Start Quiz</button>
-</div>
+  function renderQuestion(name, schedule) {
+    if (current >= questions.length) return finishQuiz(name, schedule);
+    const {q, options, a} = questions[current];
+    container.innerHTML = `<div>${q}</div>` + options.map(opt => `<button onclick="choose(this, '${opt}', '${a}', '${name}', '${schedule}')">${opt}</button>`).join('');
+  }
 
-<div id="quizBox" class="box" style="display:none;">
-    <div id="quiz"></div>
-    <button id="nextBtn" onclick="nextQuestion()">Next</button>
-</div>
-
-<div id="result" class="box" style="display:none;"></div>
-<div id="answers" class="box" style="display:none;"></div>
-
-<script>
-// Google Apps Script URL
-const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec";
-
-// Editable Questions
-const questions = [
-    {q:"What does software architecture define?", o:["Low-level implementation details","High-level structure and component interactions","Only user interface layouts"], a:"High-level structure and component interactions"},
-    {q:"Which is NOT a key architectural approach?", o:["MVC","Layered","Waterfall"], a:"Waterfall"},
-    {q:"In MVC, which component handles business logic and data?", o:["View","Controller","Model"], a:"Model"},
-    {q:"What does the Layered Architecture emphasize?", o:["Vertical dependencies","Horizontal separation of concerns","Real-time updates"], a:"Horizontal separation of concerns"},
-    {q:"In Microservices, each service should be:", o:["Loosely coupled and focused on a specific business capability","Tightly integrated into a monolith","Only database-oriented"], a:"Loosely coupled and focused on a specific business capability"},
-    {q:"Which design pattern ensures only one instance of a class exists?", o:["Singleton","Observer","Factory"], a:"Singleton"},
-    {q:"The Factory pattern is used to:", o:["Automatically update UI","Create objects without specifying exact classes","Manage global resources"], a:"Create objects without specifying exact classes"},
-    {q:"Which pattern defines a one-to-many dependency between objects?", o:["Observer","Singleton","Layered"], a:"Observer"},
-    {q:"Which architectural pattern is common in enterprise systems?", o:["Microservices","Layered","Observer"], a:"Layered"},
-    {q:"MVC improves testability by:", o:["Combining logic and UI","Separating concerns","Using multiple databases"], a:"Separating concerns"},
-    {q:"Microservices communicate primarily through:", o:["Shared memory","APIs","Local files"], a:"APIs"},
-    {q:"The primary goal of design patterns is to:", o:["Provide reusable solutions to common problems","Replace programming languages","Reduce team size"], a:"Provide reusable solutions to common problems"},
-    {q:"Which is a trade-off of using patterns?", o:["They may add unnecessary complexity","They always reduce code length","They remove the need for testing"], a:"They may add unnecessary complexity"},
-    {q:"In Layered Architecture, the Data Access Layer:", o:["Handles user input","Manages database interactions","Controls business logic"], a:"Manages database interactions"},
-    {q:"Which combination shows synergy between patterns?", o:["MVC + Singleton + Factory + Observer","Waterfall + Observer","Singleton + Monolith"], a:"MVC + Singleton + Factory + Observer"}
-];
-
-let shuffledQuestions, currentQuestionIndex=0, score=0, userAnswers=[];
-let studentData = {};
-
-function disableKeys(e) {
-    if (e.ctrlKey && (e.key === "u" || e.key === "U" || e.key === "s" || e.key === "S" || e.key === "c" || e.key === "C")) {
-        return false;
-    }
-}
-
-function startQuiz(){
-    const name = document.getElementById("name").value.trim();
-    const schedule = document.getElementById("schedule").value.trim();
-    const date = document.getElementById("date").value;
-
-    if(!name || !schedule || !date){
-        alert("Please fill out all fields.");
-        return;
-    }
-    studentData = {name, schedule, date};
-
-    shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("quizBox").style.display = "block";
-    loadQuestion();
-}
-
-function loadQuestion(){
-    const q = shuffledQuestions[currentQuestionIndex];
-    let html = `<div class="question-text">${q.q}</div>`;
-    q.o.sort(() => Math.random() - 0.5).forEach(opt => {
-        html += `
-        <label class="option">
-            <input type="radio" name="answer" value="${opt}">
-            ${opt}
-        </label>`;
-    });
-    document.getElementById("quiz").innerHTML = html;
-
-    document.querySelectorAll(".option").forEach(option => {
-        option.addEventListener("click", () => {
-            document.querySelectorAll(".option").forEach(opt => opt.classList.remove("selected"));
-            option.classList.add("selected");
-            option.querySelector("input").checked = true;
-        });
-    });
-}
-
-function nextQuestion(){
-    const selected = document.querySelector('input[name="answer"]:checked');
-    if(!selected){
-        alert("Select an answer");
-        return;
-    }
-    userAnswers.push(selected.value);
-    if(selected.value === shuffledQuestions[currentQuestionIndex].a) score++;
-
-    currentQuestionIndex++;
-    if(currentQuestionIndex < shuffledQuestions.length){
-        loadQuestion();
-    } else {
-        finishQuiz();
-    }
-}
-
-function finishQuiz(){
-    document.getElementById("quizBox").style.display = "none";
-    document.getElementById("result").style.display = "block";
-    document.getElementById("result").innerHTML = `<h2>Your Score: ${score} / ${shuffledQuestions.length}</h2><p>Answers will be available in 10 minutes.</p>`;
-
-    fetch(scriptURL, {
-        method: 'POST',
-        body: JSON.stringify({...studentData, score, answers:userAnswers})
-    });
-
+  window.choose = (btn, selected, correct, name, schedule) => {
+    btn.disabled = true;
+    if (selected === correct) score++;
     setTimeout(() => {
-        let ansHTML = "<h3>Correct Answers:</h3><ol>";
-        shuffledQuestions.forEach((q,i) => {
-            ansHTML += `<li>${q.q}<br><strong>Correct:</strong> ${q.a}<br><strong>Your Answer:</strong> ${userAnswers[i]}</li>`;
-        });
-        ansHTML += "</ol>";
-        document.getElementById("answers").innerHTML = ansHTML;
-        document.getElementById("answers").style.display = "block";
-    }, 10*60*1000);
-}
-</script>
+      current++; renderQuestion(name, schedule);
+    }, 500);
+  };
 
+  function finishQuiz(name, schedule) {
+    container.innerHTML = `<h3>Your score: ${score}/${questions.length}</h3>`;
+    fetch(scriptURL, {
+      method: 'POST',
+      body: JSON.stringify({ name, schedule, score, date: new Date().toISOString().slice(0,10) }),
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(console.error);
+  }
+  </script>
 </body>
 </html>
