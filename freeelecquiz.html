@@ -11,13 +11,17 @@
         text-align: center;
         padding: 20px;
     }
+    h1 {
+        color: #00f0ff;
+        text-shadow: 0 0 8px #00f0ff;
+    }
     .box {
         background: rgba(20,25,50,0.9);
         border: 2px solid #00f0ff;
         border-radius: 12px;
         padding: 20px;
-        width: 80%;
-        max-width: 600px;
+        width: 90%;
+        max-width: 700px;
         margin: auto;
         box-shadow: 0 0 20px #00f0ff;
     }
@@ -27,11 +31,44 @@
         border-radius: 5px;
         border: none;
         width: 80%;
+        font-size: 1em;
     }
     button {
         background: #00f0ff;
         cursor: pointer;
         font-weight: bold;
+        color: #000;
+        transition: background 0.3s, box-shadow 0.3s;
+    }
+    button:hover {
+        background: #00d0e6;
+        box-shadow: 0 0 10px #00f0ff;
+    }
+    .question-text {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        text-align: left;
+    }
+    .option {
+        background: rgba(0, 240, 255, 0.05);
+        border: 2px solid #00f0ff;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 8px 0;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.3s, box-shadow 0.3s;
+    }
+    .option:hover {
+        background: rgba(0, 240, 255, 0.1);
+        box-shadow: 0 0 8px #00f0ff;
+    }
+    .option input {
+        display: none;
+    }
+    .option.selected {
+        background: rgba(0, 240, 255, 0.2);
+        box-shadow: 0 0 15px #00f0ff;
     }
 </style>
 </head>
@@ -57,11 +94,26 @@
 
 <script>
 // Google Apps Script URL
-const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec"; // Replace with your Google Apps Script Web App URL
+const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec";
 
-// Obfuscated questions & answers
-const encodedData = atob("W3sicSI6IldoYXQgaXMgU29mdHdhcmUgQXJjaGl0ZWN0dXJlPyIsIm8iOlsiSGlnaC1sZXZlbCBzdHJ1Y3R1cmUiLCJMb3ctbGV2ZWwgcHJvZ3JhbSIsIk9ubHkgdWkiXSwiYSI6IkhpZ2gtbGV2ZWwgc3RydWN0dXJlIn1d"); 
-const questions = JSON.parse(encodedData);
+// Editable Questions
+const questions = [
+    {q:"What does software architecture define?", o:["Low-level implementation details","High-level structure and component interactions","Only user interface layouts"], a:"High-level structure and component interactions"},
+    {q:"Which is NOT a key architectural approach?", o:["MVC","Layered","Waterfall"], a:"Waterfall"},
+    {q:"In MVC, which component handles business logic and data?", o:["View","Controller","Model"], a:"Model"},
+    {q:"What does the Layered Architecture emphasize?", o:["Vertical dependencies","Horizontal separation of concerns","Real-time updates"], a:"Horizontal separation of concerns"},
+    {q:"In Microservices, each service should be:", o:["Loosely coupled and focused on a specific business capability","Tightly integrated into a monolith","Only database-oriented"], a:"Loosely coupled and focused on a specific business capability"},
+    {q:"Which design pattern ensures only one instance of a class exists?", o:["Singleton","Observer","Factory"], a:"Singleton"},
+    {q:"The Factory pattern is used to:", o:["Automatically update UI","Create objects without specifying exact classes","Manage global resources"], a:"Create objects without specifying exact classes"},
+    {q:"Which pattern defines a one-to-many dependency between objects?", o:["Observer","Singleton","Layered"], a:"Observer"},
+    {q:"Which architectural pattern is common in enterprise systems?", o:["Microservices","Layered","Observer"], a:"Layered"},
+    {q:"MVC improves testability by:", o:["Combining logic and UI","Separating concerns","Using multiple databases"], a:"Separating concerns"},
+    {q:"Microservices communicate primarily through:", o:["Shared memory","APIs","Local files"], a:"APIs"},
+    {q:"The primary goal of design patterns is to:", o:["Provide reusable solutions to common problems","Replace programming languages","Reduce team size"], a:"Provide reusable solutions to common problems"},
+    {q:"Which is a trade-off of using patterns?", o:["They may add unnecessary complexity","They always reduce code length","They remove the need for testing"], a:"They may add unnecessary complexity"},
+    {q:"In Layered Architecture, the Data Access Layer:", o:["Handles user input","Manages database interactions","Controls business logic"], a:"Manages database interactions"},
+    {q:"Which combination shows synergy between patterns?", o:["MVC + Singleton + Factory + Observer","Waterfall + Observer","Singleton + Monolith"], a:"MVC + Singleton + Factory + Observer"}
+];
 
 let shuffledQuestions, currentQuestionIndex=0, score=0, userAnswers=[];
 let studentData = {};
@@ -91,11 +143,23 @@ function startQuiz(){
 
 function loadQuestion(){
     const q = shuffledQuestions[currentQuestionIndex];
-    let html = `<h3>${q.q}</h3>`;
+    let html = `<div class="question-text">${q.q}</div>`;
     q.o.sort(() => Math.random() - 0.5).forEach(opt => {
-        html += `<label><input type="radio" name="answer" value="${opt}"> ${opt}</label><br>`;
+        html += `
+        <label class="option">
+            <input type="radio" name="answer" value="${opt}">
+            ${opt}
+        </label>`;
     });
     document.getElementById("quiz").innerHTML = html;
+
+    document.querySelectorAll(".option").forEach(option => {
+        option.addEventListener("click", () => {
+            document.querySelectorAll(".option").forEach(opt => opt.classList.remove("selected"));
+            option.classList.add("selected");
+            option.querySelector("input").checked = true;
+        });
+    });
 }
 
 function nextQuestion(){
@@ -120,13 +184,11 @@ function finishQuiz(){
     document.getElementById("result").style.display = "block";
     document.getElementById("result").innerHTML = `<h2>Your Score: ${score} / ${shuffledQuestions.length}</h2><p>Answers will be available in 10 minutes.</p>`;
 
-    // Send to Google Sheet
     fetch(scriptURL, {
         method: 'POST',
         body: JSON.stringify({...studentData, score, answers:userAnswers})
     });
 
-    // Show answers after 10 minutes
     setTimeout(() => {
         let ansHTML = "<h3>Correct Answers:</h3><ol>";
         shuffledQuestions.forEach((q,i) => {
