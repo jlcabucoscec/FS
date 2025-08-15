@@ -1,66 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Live Quiz</title></head>
+<head>
+<meta charset="UTF-8">
+<title>Live Quiz</title>
+<style>
+  body {
+    background: #0a0f1f;
+    color: #e0e0e0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h2, h3 {
+    color: #00f0ff;
+    text-shadow: 0 0 8px #00f0ff;
+  }
+  input, button {
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+  }
+  input {
+    width: 250px;
+  }
+  button {
+    background: #00f0ff;
+    color: #000;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #00c0d1;
+  }
+  #quizContainer {
+    margin-top: 20px;
+    background: rgba(20,25,50,0.85);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,240,255,0.5);
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+  }
+  .option-btn {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    background: #1a2b3c;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .option-btn:hover {
+    background: #2c3f5a;
+    transform: scale(1.02);
+  }
+  #timer {
+    font-size: 1.2rem;
+    margin-top: 10px;
+    color: #ff4f4f;
+    text-shadow: 0 0 8px #ff0000;
+  }
+</style>
+</head>
 <body>
-  <div>
-    <h2>Enter your details:</h2>
-    <input id="name" placeholder="Your Name"><br>
-    <input id="schedule" placeholder="Schedule"><br>
-    <button id="startBtn">Start Quiz (wait 5 seconds)</button>
-  </div>
-  <div id="quizContainer" style="display:none"></div>
-  <script>
-  const sheetURL = "https://docs.google.com/spreadsheets/d/1GzWimNcy3EP08pOoPGNk7rSDx48layBIjyR7-lTAXa8/gviz/tq?tqx=out:json&sheet=freeelecanswer1";
-  const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec";
-  let questions = [], current = 0, score = 0;
-  const startBtn = document.getElementById("startBtn"), container = document.getElementById("quizContainer");
 
-  startBtn.onclick = () => {
-    const name = document.getElementById("name").value, schedule = document.getElementById("schedule").value;
-    if (!name || !schedule) return alert("Please fill both fields.");
-    startBtn.disabled = true;
-    startBtn.textContent = "Please wait…";
-    setTimeout(() => initQuiz(name, schedule), 5000);
-  };
+<div>
+  <h2>Enter your details:</h2>
+  <input id="name" placeholder="Your Name"><br>
+  <input id="schedule" placeholder="Schedule"><br>
+  <button id="startBtn">Start Quiz (wait 5 seconds)</button>
+</div>
 
-  function initQuiz(name, schedule) {
-    fetch(sheetURL)
-      .then(r => r.text())
-      .then(t => JSON.parse(t.substr(47).slice(0, -2)))
-      .then(js => {
-        questions = js.table.rows.slice(1).map(r => ({
-          q: r.c[0]?.v,
-          options: [r.c[1]?.v, r.c[2]?.v, r.c[3]?.v, r.c[4]?.v].filter(Boolean),
-          a: r.c[5]?.v
-        }));
-        questions.sort(() => Math.random() - 0.5);
-        container.style.display = 'block';
-        renderQuestion(name, schedule);
-      });
-  }
+<div id="quizContainer" style="display:none"></div>
+<div id="timer" style="display:none"></div>
 
-  function renderQuestion(name, schedule) {
-    if (current >= questions.length) return finishQuiz(name, schedule);
-    const {q, options, a} = questions[current];
-    container.innerHTML = `<div>${q}</div>` + options.map(opt => `<button onclick="choose(this, '${opt}', '${a}', '${name}', '${schedule}')">${opt}</button>`).join('');
-  }
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/1GzWimNcy3EP08pOoPGNk7rSDx48layBIjyR7-lTAXa8/gviz/tq?tqx=out:json&sheet=freeelecanswer1";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxdugy3lh0kqK17Hmxq3tt2ABwBcBK7nMJEFpfUF_t2X_pePJpGSFpLW-IPgFPIIsNw2w/exec";
 
-  window.choose = (btn, selected, correct, name, schedule) => {
-    btn.disabled = true;
-    if (selected === correct) score++;
-    setTimeout(() => {
-      current++; renderQuestion(name, schedule);
-    }, 500);
-  };
+let questions = [], current = 0, score = 0, timerInterval;
+const startBtn = document.getElementById("startBtn"), container = document.getElementById("quizContainer"), timerDisplay = document.getElementById("timer");
 
-  function finishQuiz(name, schedule) {
-    container.innerHTML = `<h3>Your score: ${score}/${questions.length}</h3>`;
-    fetch(scriptURL, {
-      method: 'POST',
-      body: JSON.stringify({ name, schedule, score, date: new Date().toISOString().slice(0,10) }),
-      headers: { 'Content-Type': 'application/json' }
-    }).catch(console.error);
-  }
-  </script>
+startBtn.onclick = () => {
+  const name = document.getElementById("name").value, schedule = document.getElementById("schedule").value;
+  if (!name || !schedule) return alert("Please fill both fields.");
+  startBtn.disabled = true;
+  startBtn.textContent = "Please wait…";
+  setTimeout(() => initQuiz(name, schedule), 5000);
+};
+
+function initQuiz(name, schedule) {
+  fetch(sheetURL)
+    .then(r => r.text())
+    .then(t => JSON.parse(t.substr(47).slice(0, -2)))
+    .then(js => {
+      questions = js.table.rows.slice(1).map(r => ({
+        q: r.c[0]?.v,
+        options: [r.c[1]?.v, r.c[2]?.v, r.c[3]?.v, r.c[4]?.v].filter(Boolean),
+        a: r.c[5]?.v
+      }));
+      questions.sort(() => Math.random() - 0.5);
+      container.style.display = 'block';
+      timerDisplay.style.display = 'block';
+      startTimer(10 * 60, name, schedule); // 10 mins
+      renderQuestion(name, schedule);
+    });
+}
+
+function renderQuestion(name, schedule) {
+  if (current >= questions.length) return finishQuiz(name, schedule);
+  const {q, options, a} = questions[current];
+  container.innerHTML = `<div><h3>${q}</h3></div>` + options.map(opt =>
+    `<button class="option-btn" onclick="choose(this, '${opt}', '${a}', '${name}', '${schedule}')">${opt}</button>`).join('');
+}
+
+window.choose = (btn, selected, correct, name, schedule) => {
+  [...document.querySelectorAll(".option-btn")].forEach(b => b.disabled = true);
+  if (selected === correct) score++;
+  setTimeout(() => {
+    current++; renderQuestion(name, schedule);
+  }, 500);
+};
+
+function finishQuiz(name, schedule) {
+  clearInterval(timerInterval);
+  container.innerHTML = `<h3>Your score: ${score}/${questions.length}</h3>`;
+  timerDisplay.style.display = 'none';
+  fetch(scriptURL, {
+    method: 'POST',
+    body: JSON.stringify({ name, schedule, score, date: new Date().toISOString().slice(0,10) }),
+    headers: { 'Content-Type': 'application/json' }
+  }).catch(console.error);
+}
+
+function startTimer(duration, name, schedule) {
+  let time = duration;
+  timerInterval = setInterval(() => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    timerDisplay.textContent = `Time left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    if (--time < 0) {
+      clearInterval(timerInterval);
+      finishQuiz(name, schedule);
+    }
+  }, 1000);
+}
+</script>
 </body>
 </html>
