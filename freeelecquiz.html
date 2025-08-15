@@ -50,25 +50,29 @@
         text-align: left;
     }
     .option {
-        background: rgba(0, 240, 255, 0.05);
-        border: 2px solid #00f0ff;
-        border-radius: 8px;
-        padding: 12px;
-        margin: 8px 0;
-        text-align: left;
-        cursor: pointer;
-        transition: background 0.3s, box-shadow 0.3s;
-    }
-    .option:hover {
-        background: rgba(0, 240, 255, 0.1);
-        box-shadow: 0 0 8px #00f0ff;
-    }
+    background: rgba(0, 240, 255, 0.05);
+    border: 2px solid #00f0ff;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0; /* More space between choices */
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+    display: block;
+    box-shadow: 0 0 5px rgba(0, 240, 255, 0.3); /* Subtle glow */
+}
+.option:hover {
+    background: rgba(0, 240, 255, 0.15);
+    box-shadow: 0 0 12px #00f0ff;
+    transform: translateY(-2px); /* Lift on hover */
+}
+.option.selected {
+    background: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 15px #00f0ff;
+}
+
     .option input {
         display: none;
-    }
-    .option.selected {
-        background: rgba(0, 240, 255, 0.2);
-        box-shadow: 0 0 15px #00f0ff;
     }
 </style>
 </head>
