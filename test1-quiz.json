@@ -1,0 +1,145 @@
+{
+  "tests": [
+    {
+      "testName": "Test 1 – Software Architecture Patterns",
+      "instructions": "Choose the correct answer for each question. Write the letter of your answer in the space provided.",
+      "questions": [
+        {
+          "question": "What does software architecture define?",
+          "choices": [
+            "Low-level implementation details",
+            "High-level structure and component interactions",
+            "Only user interface layouts"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "Which is NOT a key architectural approach?",
+          "choices": [
+            "MVC",
+            "Layered",
+            "Waterfall"
+          ],
+          "answer": "C"
+        },
+        {
+          "question": "In MVC, which component handles business logic and data?",
+          "choices": [
+            "View",
+            "Controller",
+            "Model"
+          ],
+          "answer": "C"
+        },
+        {
+          "question": "What does the Layered Architecture emphasize?",
+          "choices": [
+            "Vertical dependencies",
+            "Horizontal separation of concerns",
+            "Real-time updates"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "In Microservices, each service should be:",
+          "choices": [
+            "Loosely coupled and focused on a specific business capability",
+            "Tightly integrated into a monolith",
+            "Only database-oriented"
+          ],
+          "answer": "A"
+        },
+        {
+          "question": "Which design pattern ensures only one instance of a class exists?",
+          "choices": [
+            "Singleton",
+            "Observer",
+            "Factory"
+          ],
+          "answer": "A"
+        },
+        {
+          "question": "The Factory pattern is used to:",
+          "choices": [
+            "Automatically update UI",
+            "Create objects without specifying exact classes",
+            "Manage global resources"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "Which pattern defines a one-to-many dependency between objects?",
+          "choices": [
+            "Observer",
+            "Singleton",
+            "Layered"
+          ],
+          "answer": "A"
+        },
+        {
+          "question": "Which architectural pattern is common in enterprise systems?",
+          "choices": [
+            "Microservices",
+            "Layered",
+            "Observer"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "MVC improves testability by:",
+          "choices": [
+            "Combining logic and UI",
+            "Separating concerns",
+            "Using multiple databases"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "Microservices communicate primarily through:",
+          "choices": [
+            "Shared memory",
+            "APIs",
+            "Local files"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "The primary goal of design patterns is to:",
+          "choices": [
+            "Provide reusable solutions to common problems",
+            "Replace programming languages",
+            "Reduce team size"
+          ],
+          "answer": "A"
+        },
+        {
+          "question": "Which is a trade-off of using patterns?",
+          "choices": [
+            "They may add unnecessary complexity",
+            "They always reduce code length",
+            "They remove the need for testing"
+          ],
+          "answer": "A"
+        },
+        {
+          "question": "In Layered Architecture, the Data Access Layer:",
+          "choices": [
+            "Handles user input",
+            "Manages database interactions",
+            "Controls business logic"
+          ],
+          "answer": "B"
+        },
+        {
+          "question": "Which combination shows synergy between patterns?",
+          "choices": [
+            "MVC + Singleton + Factory + Observer",
+            "Waterfall + Observer",
+            "Singleton + Monolith"
+          ],
+          "answer": "A"
+        }
+      ]
+    }
+  ]
+}
